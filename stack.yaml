@@ -1,0 +1,234 @@
+version: "3.5"
+
+networks:
+  socks-net:
+    driver: overlay
+    attachable: true
+
+volumes:
+  carts-db-vol:
+  orders-db-vol:
+  user-db-vol:
+
+
+
+services:
+
+  front-end:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/front-end:0.3.12
+    networks:
+      - socks-net
+    ports:
+      - '80:8079'
+
+  catalogue:
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/catalogue:0.3.5
+    networks:
+      - socks-net
+
+
+  catalogue-db:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/catalogue-db:0.3.0
+    networks:
+      - socks-net
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_DATABASE=socksdb
+
+  carts:
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/carts:0.4.8
+    networks:
+      - socks-net
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  carts-db:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: mongo:3.4
+    volumes:
+      - carts-db-vol:/data/db
+    networks:
+      - socks-net
+
+
+  orders:
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/orders:0.4.7
+    networks:
+      - socks-net
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  orders-db:
+    deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 30s
+          max_attempts: 3
+          window: 60s
+        update_config:
+          parallelism: 1
+          delay: 10s
+          max_failure_ratio: 0.3
+    image: mongo:3.4
+    volumes:
+      - orders-db-vol:/data/db
+    networks:
+      - socks-net
+
+  shipping:
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/shipping:0.4.8
+    networks:
+      - socks-net
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  rabbitmq:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: rabbitmq:3.6.8
+    networks:
+      - socks-net
+
+  payment:
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/payment:0.4.3
+    networks:
+      - socks-net
+
+  user:
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/user:0.4.4
+    networks:
+      - socks-net
+    environment:
+      - MONGO_HOST=user-db:27017
+
+  user-db:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
+    image: weaveworksdemos/user-db:0.4.0
+    volumes:
+      - user-db-vol:/data/db-users
+    networks:
+      - socks-net
+
+  tests:
+    image: debian:8
+    volumes: ["/sys/fs/cgroup:/sys/fs/cgroup:ro"]
+    command: "/sbin/init"
