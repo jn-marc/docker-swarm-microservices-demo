@@ -229,10 +229,6 @@ services:
       - socks-net
 
   tests:
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager    
     image: debian:8
     volumes: ["/sys/fs/cgroup:/sys/fs/cgroup:ro"]
     command: "/sbin/init"
