@@ -232,3 +232,5 @@ services:
     image: debian:8
     volumes: ["/sys/fs/cgroup:/sys/fs/cgroup:ro"]
     command: "/sbin/init"
+    networks:
+      - socks-net
